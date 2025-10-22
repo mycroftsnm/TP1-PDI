@@ -19,15 +19,13 @@ def contar_letras(imagen):
 
 def contar_palabras(imagen):
     """
-    Recibe una imagen binaria (blanco sobre negro).
-    Verifica las columnas en busca de espacios negros entre columnas con texto blanco.
-    Si detecta más de 2 columnas negras seguidas y hasta 10, lo cuenta como un quiebre de palabra.
-    Si es mayor de 10, lo omite.
-    Devuelve el número de quiebres de palabras detectados (contornos).
+    Cuenta palabras en una imagen binaria (blanco sobre negro).
+    Usa dilatación morfológica para unir letras y detecta contornos separados.
+    Retorna el número de palabras encontradas.
     """
     _, thresh = cv2.threshold(imagen, 0, 255, cv2.THRESH_OTSU)
 
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     dilated = cv2.dilate(thresh, kernel, iterations=2)
 
     contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
