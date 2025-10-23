@@ -23,10 +23,8 @@ def contar_palabras(imagen):
     Usa dilatación morfológica para unir letras y detecta contornos separados.
     Retorna el número de palabras encontradas.
     """
-    _, thresh = cv2.threshold(imagen, 0, 255, cv2.THRESH_OTSU)
-
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    dilated = cv2.dilate(thresh, kernel, iterations=2)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (4, 4))
+    dilated = cv2.dilate(imagen, kernel, iterations=2)
 
     contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
