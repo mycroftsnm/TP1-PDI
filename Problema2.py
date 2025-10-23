@@ -6,14 +6,9 @@ import pandas as pd
 def contar_letras(imagen):
     """
     Recibe una imagen binaria (blanco sobre negro).
-    Realiza dilatación moderada para obtener mejor detección de las letras.
     Devuelve el número de letras (contornos).
     """
-    kernel = np.ones((3, 3), np.uint8)
-    imagen_abierta = cv2.morphologyEx(imagen, cv2.MORPH_OPEN, kernel)
-
-    contornos, _ = cv2.findContours(imagen_abierta, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
+    contornos, _ = cv2.findContours(imagen, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return len(contornos)
 
 
