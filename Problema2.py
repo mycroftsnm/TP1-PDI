@@ -40,6 +40,11 @@ def procesar_imagen_formulario(imagen):
     return imagen[my:My+1, mx:Mx+1]
 
 def obtener_celdas(imagen):
+    '''
+    Recibe la imagen ajustada de un formulario
+    Devuelve una lista de listas de crops de las celdas
+    en formato celdas = [filas[columnas]]
+    '''
     celdas = []
     largo, ancho = imagen.shape
 
@@ -48,10 +53,11 @@ def obtener_celdas(imagen):
 
     for i in range(1,len(filas)):
         fila = []
+
         if filas[i] == filas[i-1] + 1:
             continue
         my = filas[i-1] + 1
-        My = filas[i] - 1
+        My = filas[i]
 
         suma_cols = np.sum(imagen[my:My,:], axis=0)
         cols = np.where(suma_cols == 255 * (My-my))[0]
@@ -61,13 +67,19 @@ def obtener_celdas(imagen):
                 continue
             mx = cols[j-1] + 1
             Mx = cols[j]
-            fila.append(imagen[my:My,mx:Mx])
+            # Guarda la celda con 2 pixeles de margen en cada direccion
+            fila.append(imagen[my+2:My-2,mx+2:Mx-2]) 
 
         celdas.append(fila)
 
     return celdas
 
 def obtener_resultados(celdas):
+    '''
+    Recibe los crops de cada celda de un formulario en formato celdas = [filas[columnas]].
+    Devuelve una tupla conteniedo un diccionario con los resultados de cada campo
+    y un Booleano indicando si el formulario es correcto o no
+    '''
     rtas = {}
     correcto = True
 
@@ -130,6 +142,11 @@ def obtener_resultados(celdas):
     return rtas, correcto
     
 def generar_imagen_resultados(correctos, incorrectos):
+    '''
+    Recibe 2 listas, una de crops del campo Nombre de formularios correctos
+    y otra de crops del campo Nombre de formularios incorrectos.
+    Genera una imagen concatenando todos los crops y agregando títulos
+    '''
     img_correctos = cv2.vconcat(correctos)
     img_incorrectos = cv2.vconcat(incorrectos)
 
@@ -235,4 +252,4 @@ if __name__ == "__main__":
 
     df_resultados = pd.DataFrame(lista_resultados)
     df_resultados.set_index('ID', inplace=True)
-    df_resultados.to_csv('resultados.csv', encoding='utf-8') 
+    df_resultados.to_csv('resultados.csv', encoding='utf-8')
