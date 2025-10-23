@@ -105,7 +105,7 @@ def obtener_resultados(celdas):
         correcto = False
 
     # Legajo (fila 4, columna 1)
-    if contar_palabras(celdas[4][1]) == 1 and contar_letras(celdas[4][1]) <= 8:
+    if contar_palabras(celdas[4][1]) == 1 and contar_letras(celdas[4][1]) == 8:
         rtas["Legajo"] = 'OK'
     else:
         rtas["Legajo"] = 'MAL'
@@ -133,7 +133,7 @@ def obtener_resultados(celdas):
         correcto = False
 
     # Comentarios (fila 9, columna 1)
-    if contar_palabras(celdas[9][1]) > 1 and contar_letras(celdas[9][1]) <= 25:
+    if contar_palabras(celdas[9][1]) >= 1 and contar_letras(celdas[9][1]) <= 25:
         rtas["Comentarios"] = 'OK'
     else:
         rtas["Comentarios"] = 'MAL'
