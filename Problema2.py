@@ -40,7 +40,7 @@ def procesar_imagen_formulario(imagen):
     la imagen ajustada a los bordes de la tabla
     y binarizada.
     '''
-    _, imagen = cv2.threshold(imagen, 220, 255, cv2.THRESH_BINARY_INV)
+    _, imagen = cv2.threshold(imagen, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     coordenadas_y, coordenadas_x = np.where(imagen > 0)
     mx, my, Mx, My = np.min(coordenadas_x), np.min(coordenadas_y), np.max(coordenadas_x), np.max(coordenadas_y)
 
