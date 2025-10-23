@@ -48,22 +48,30 @@ def procesar_imagen_formulario(imagen):
 
 def obtener_celdas(imagen):
     celdas = []
-    
     largo, ancho = imagen.shape
+
     suma_filas = np.sum(imagen, axis=1)
     filas = np.where(suma_filas == 255 * ancho)[0]
 
-    for i in range(1,len(filas)-1,2):
+    for i in range(1,len(filas)):
         fila = []
-        my = filas[i] + 1
-        My = filas[i+1]
+        if filas[i] == filas[i-1] + 1:
+            continue
+        my = filas[i-1] + 1
+        My = filas[i] - 1
+
         suma_cols = np.sum(imagen[my:My,:], axis=0)
         cols = np.where(suma_cols == 255 * (My-my))[0]
-        for j in range(1,len(cols)-1,2):
-            mx = cols[j] + 1
-            Mx = cols[j+1]
+
+        for j in range(1,len(cols)):
+            if cols[j] == cols[j-1] + 1:
+                continue
+            mx = cols[j-1] + 1
+            Mx = cols[j]
             fila.append(imagen[my:My,mx:Mx])
+
         celdas.append(fila)
+
     return celdas
 
 def obtener_resultados(celdas):
