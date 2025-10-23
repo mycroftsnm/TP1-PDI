@@ -23,16 +23,21 @@ resultados_norm = [cv2.normalize(res, None, 0, 255, cv2.NORM_MINMAX) for res in 
 
 
 
-plt.imshow(img_gray, cmap='gray')
-plt.title('Original')
-plt.axis('off')
+
+fig1, ax1 = plt.subplots()
+ax1.imshow(img_gray, cmap='gray')
+ax1.set_title('Original')
+ax1.axis('off')
 plt.show()
 
-for i, (res, (M,N)) in enumerate(zip(resultados_norm, ventanas)):
-    
-    plt.imshow(res, cmap='gray')
-    plt.title(f'IMAGEN con (ventana {M}x{N})')
-    plt.axis('off')
 
-    plt.tight_layout()
-    plt.show()
+fig, axes = plt.subplots(2, 2, sharex=ax1, sharey=ax1, figsize=(12, 12))
+axes = axes.flatten()
+
+for i, (res, (M, N)) in enumerate(zip(resultados_norm, ventanas)):
+    axes[i].imshow(res, cmap='gray')
+    axes[i].set_title(f'Ventana {M}x{N}')
+    axes[i].axis('off')
+
+plt.tight_layout()
+plt.show()

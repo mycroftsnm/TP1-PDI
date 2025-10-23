@@ -6,14 +6,9 @@ import pandas as pd
 def contar_letras(imagen):
     """
     Recibe una imagen binaria (blanco sobre negro).
-    Realiza dilatación moderada para obtener mejor detección de las letras.
     Devuelve el número de letras (contornos).
     """
-    kernel = np.ones((3, 3), np.uint8)
-    imagen_abierta = cv2.morphologyEx(imagen, cv2.MORPH_OPEN, kernel)
-
-    contornos, _ = cv2.findContours(imagen_abierta, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
+    contornos, _ = cv2.findContours(imagen, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     return len(contornos)
 
 
@@ -23,10 +18,8 @@ def contar_palabras(imagen):
     Usa dilatación morfológica para unir letras y detecta contornos separados.
     Retorna el número de palabras encontradas.
     """
-    _, thresh = cv2.threshold(imagen, 0, 255, cv2.THRESH_OTSU)
-
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    dilated = cv2.dilate(thresh, kernel, iterations=2)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (4, 4))
+    dilated = cv2.dilate(imagen, kernel, iterations=2)
 
     contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -40,33 +33,53 @@ def procesar_imagen_formulario(imagen):
     la imagen ajustada a los bordes de la tabla
     y binarizada.
     '''
-    _, imagen = cv2.threshold(imagen, 220, 255, cv2.THRESH_BINARY_INV)
+    _, imagen = cv2.threshold(imagen, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     coordenadas_y, coordenadas_x = np.where(imagen > 0)
     mx, my, Mx, My = np.min(coordenadas_x), np.min(coordenadas_y), np.max(coordenadas_x), np.max(coordenadas_y)
 
     return imagen[my:My+1, mx:Mx+1]
 
 def obtener_celdas(imagen):
+    '''
+    Recibe la imagen ajustada de un formulario
+    Devuelve una lista de listas de crops de las celdas
+    en formato celdas = [filas[columnas]]
+    '''
     celdas = []
-    
     largo, ancho = imagen.shape
+
     suma_filas = np.sum(imagen, axis=1)
     filas = np.where(suma_filas == 255 * ancho)[0]
 
-    for i in range(1,len(filas)-1,2):
+    for i in range(1,len(filas)):
         fila = []
-        my = filas[i] + 1
-        My = filas[i+1]
+
+        if filas[i] == filas[i-1] + 1:
+            continue
+        my = filas[i-1] + 1
+        My = filas[i]
+
         suma_cols = np.sum(imagen[my:My,:], axis=0)
         cols = np.where(suma_cols == 255 * (My-my))[0]
-        for j in range(1,len(cols)-1,2):
-            mx = cols[j] + 1
-            Mx = cols[j+1]
-            fila.append(imagen[my:My,mx:Mx])
+
+        for j in range(1,len(cols)):
+            if cols[j] == cols[j-1] + 1:
+                continue
+            mx = cols[j-1] + 1
+            Mx = cols[j]
+            # Guarda la celda con 2 pixeles de margen en cada direccion
+            fila.append(imagen[my+2:My-2,mx+2:Mx-2]) 
+
         celdas.append(fila)
+
     return celdas
 
 def obtener_resultados(celdas):
+    '''
+    Recibe los crops de cada celda de un formulario en formato celdas = [filas[columnas]].
+    Devuelve una tupla conteniedo un diccionario con los resultados de cada campo
+    y un Booleano indicando si el formulario es correcto o no
+    '''
     rtas = {}
     correcto = True
 
@@ -129,6 +142,11 @@ def obtener_resultados(celdas):
     return rtas, correcto
     
 def generar_imagen_resultados(correctos, incorrectos):
+    '''
+    Recibe 2 listas, una de crops del campo Nombre de formularios correctos
+    y otra de crops del campo Nombre de formularios incorrectos.
+    Genera una imagen concatenando todos los crops y agregando títulos
+    '''
     img_correctos = cv2.vconcat(correctos)
     img_incorrectos = cv2.vconcat(incorrectos)
 
@@ -171,6 +189,38 @@ def generar_imagen_resultados(correctos, incorrectos):
     plt.axis('off')
     plt.show()
 
+def identificar_formulario(crop_celda):
+    '''
+    Recibe el crop de la celda del título 
+    del formulario y devuelve que tipo de formulario es.
+    Si no puede identificarlo devuelve 'X'
+    '''
+
+    # Precomputados
+    AREA_LETRA_A = 134
+    AREA_LETRA_B = 152
+
+    # Si no tiene exactamente 11 letras no esta pudiendo
+    # identificar correctamente el texto, devuelve 'X'.
+    # 'FORMULARIO' 10 letras + 1 letra 'A', 'B' o 'C' que identifica el tipo 
+    if contar_letras(crop_celda) != 11:
+        return 'X'
+    
+    # Obtenemos las componentes conectadas
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(
+        crop_celda, 8, cv2.CV_32S
+    )
+    # índice de la componente más a la derecha (última letra)
+    idx = np.argmax(stats[:, cv2.CC_STAT_LEFT]) 
+
+    area_letra = stats[idx][cv2.CC_STAT_AREA]
+
+    if abs(area_letra - AREA_LETRA_A) < 3:
+        return 'A'
+    elif abs(area_letra - AREA_LETRA_B) < 3:
+        return 'B'
+    else:
+        return 'C'
 
 if __name__ == "__main__":
 
@@ -184,8 +234,9 @@ if __name__ == "__main__":
         img = procesar_imagen_formulario(img)
         celdas = obtener_celdas(img)
 
+        print(f"\nFormulario {i+1} tipo {identificar_formulario(celdas[0][0])}:")
+        
         resultados, es_correcto = obtener_resultados(celdas)
-        print(f"\nFormulario {i+1}:")
         for campo, resultado in resultados.items():
             print(f"{campo}: {resultado}")
         
@@ -201,4 +252,4 @@ if __name__ == "__main__":
 
     df_resultados = pd.DataFrame(lista_resultados)
     df_resultados.set_index('ID', inplace=True)
-    df_resultados.to_csv('resultados.csv', encoding='utf-8') 
+    df_resultados.to_csv('resultados.csv', encoding='utf-8')
