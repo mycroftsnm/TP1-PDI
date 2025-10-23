@@ -171,6 +171,38 @@ def generar_imagen_resultados(correctos, incorrectos):
     plt.axis('off')
     plt.show()
 
+def identificar_formulario(crop_celda):
+    '''
+    Recibe el crop de la celda del título 
+    del formulario y devuelve que tipo de formulario es.
+    Si no puede identificarlo devuelve 'X'
+    '''
+
+    # Precomputados
+    AREA_LETRA_A = 134
+    AREA_LETRA_B = 152
+
+    # Si no tiene exactamente 11 letras no esta pudiendo
+    # identificar correctamente el texto, devuelve 'X'.
+    # 'FORMULARIO' 10 letras + 1 letra 'A', 'B' o 'C' que identifica el tipo 
+    if contar_letras(crop_celda) != 11:
+        return 'X'
+    
+    # Obtenemos las componentes conectadas
+    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(
+        crop_celda, 8, cv2.CV_32S
+    )
+    # índice de la componente más a la derecha (última letra)
+    idx = np.argmax(stats[:, cv2.CC_STAT_LEFT]) 
+
+    area_letra = stats[idx][cv2.CC_STAT_AREA]
+
+    if abs(area_letra - AREA_LETRA_A) < 3:
+        return 'A'
+    elif abs(area_letra - AREA_LETRA_B) < 3:
+        return 'B'
+    else:
+        return 'C'
 
 if __name__ == "__main__":
 
@@ -184,8 +216,9 @@ if __name__ == "__main__":
         img = procesar_imagen_formulario(img)
         celdas = obtener_celdas(img)
 
+        print(f"\nFormulario {i+1} tipo {identificar_formulario(celdas[0][0])}:")
+        
         resultados, es_correcto = obtener_resultados(celdas)
-        print(f"\nFormulario {i+1}:")
         for campo, resultado in resultados.items():
             print(f"{campo}: {resultado}")
         
